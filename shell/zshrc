@@ -1,0 +1,117 @@
+# --- shared env (PATH, pyenv/nvm defaults, XDG, cargo/bun/gcloud/atuin path,
+#     opencode/kimi-code) — see ~/.config/shell/env.sh ---
+[ -r "$HOME/.config/shell/env.sh" ] && . "$HOME/.config/shell/env.sh"
+
+# --- Tab completion (compinit + candidate list) ---
+# Nothing was ever calling `compinit`, so `cd`/`ls`/`rm`/`mkdir`/etc. only ever
+# got zsh's bare fallback completion (no candidate list, no case-insensitivity,
+# no colors) - this is what actually needed fixing, not a keybinding conflict.
+# Must run before gcloud's completion.zsh.inc below, since `compdef` (which it
+# uses to register gcloud completions) is defined by compinit.
+zmodload zsh/complist          # required for the interactive `menu select` widget
+
+autoload -Uz compinit
+_zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump-${ZSH_VERSION}"
+mkdir -p "${_zcompdump:h}"
+# Run the (slow) security check at most once a day; use the cache otherwise.
+if [[ -n ${_zcompdump}(#qN.mh+24) ]]; then
+    compinit -d "$_zcompdump"
+    { zcompile "$_zcompdump" } &!    # byte-compile in the background for next time
+else
+    compinit -C -d "$_zcompdump"
+fi
+unset _zcompdump
+
+setopt AUTO_LIST               # list candidates automatically on ambiguous completion
+setopt AUTO_MENU               # a second <Tab> starts cycling through them
+setopt AUTO_PARAM_SLASH        # append / when completing a directory
+setopt LIST_PACKED             # use screen width efficiently in the candidate list
+setopt LIST_TYPES              # mark file types (/, *, @) in the candidate list
+setopt COMPLETE_IN_WORD        # complete from the cursor, not only at end of word
+setopt ALWAYS_TO_END           # move cursor to end after completing
+setopt PATH_DIRS               # complete commands in subdirectories
+setopt MAGIC_EQUAL_SUBST       # complete after `--flag=` too
+unsetopt MENU_COMPLETE         # show the list first; don't blindly insert candidate #1
+unsetopt LIST_BEEP
+
+# `menu select` = a highlighted, arrow-navigable list of the candidates.
+zstyle ':completion:*' menu select
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"    # colour candidates like ls
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+zstyle ':completion:*:messages'     format '%F{purple}-- %d --%f'
+zstyle ':completion:*:warnings'     format '%F{red}-- no matches --%f'
+zstyle ':completion:*:corrections'  format '%F{green}-- %d (errors: %e) --%f'
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*' auto-description 'specify: %d'
+
+# Case-insensitive, then partial-word, then substring matching
+# (so `cd doc<Tab>` also matches `Documents`).
+zstyle ':completion:*' matcher-list \
+    'm:{a-zA-Z}={A-Za-z}' \
+    'r:|[._-]=* r:|=*' \
+    'l:|=* r:|=*'
+
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompcache"
+zstyle ':completion:*' squeeze-slashes true
+zstyle ':completion:*' special-dirs true        # offer ./ and ../
+zstyle ':completion:*:cd:*' ignore-parents parent pwd
+zstyle ':completion:*' rehash true              # notice newly installed binaries
+
+# Navigate the candidate list with arrows or vim keys; Esc leaves it.
+bindkey -M menuselect '^[[Z' reverse-menu-complete   # Shift-Tab
+bindkey -M menuselect 'h' vi-backward-char
+bindkey -M menuselect 'j' vi-down-line-or-history
+bindkey -M menuselect 'k' vi-up-line-or-history
+bindkey -M menuselect 'l' vi-forward-char
+bindkey -M menuselect '^[' send-break
+
+# --- Google Cloud SDK completion (path is handled by env.sh) ---
+if [ -f "$HOME/packages/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/packages/google-cloud-sdk/completion.zsh.inc"; fi
+
+# --- shared interactive setup (lazy nvm/pyenv/mise, fcitx5 IME, gs/gd/gl
+#     aliases) — see ~/.config/shell/interactive.sh ---
+[ -r "$HOME/.config/shell/interactive.sh" ] && . "$HOME/.config/shell/interactive.sh"
+
+# --- fzf keybindings ---
+source /usr/share/doc/fzf/examples/key-bindings.zsh
+source /usr/share/doc/fzf/examples/completion.zsh
+
+# --- zoxide (smart cd) ---
+eval "$(zoxide init zsh)"
+
+# --- atuin (history search, Ctrl+R) ---
+eval "$(atuin init zsh --disable-up-arrow)"
+
+# --- starship prompt ---
+eval "$(starship init zsh)"
+
+# --- mise (runtime version manager) ---
+# Lazy-loaded now (see interactive.sh): zero cost until you actually run `mise`.
+# If you rely on mise's automatic per-directory version switching, run
+# `mise-activate` once at the top of the shell to load the real hook eagerly.
+
+# --- Ctrl+Q: fzf + zoxide directory jump ---
+stty -ixon
+fzf-zoxide-cd() {
+  local dir
+  dir=$(zoxide query --list | fzf) && cd "$dir"
+}
+zle -N fzf-zoxide-cd
+bindkey '^Q' fzf-zoxide-cd
+
+# --- Plugins (sheldon) ---
+# Must load LAST: zsh-syntax-highlighting wraps zle widgets, and anything that
+# defines/rebinds widgets afterward (fzf, atuin, the Ctrl+Q binding above) can
+# break its wrapping if loaded first. This was the actual reason command
+# highlighting looked broken - autosuggestions/syntax-highlighting were loading
+# before fzf/atuin/zoxide, not after.
+eval "$(sheldon source)"
+
+# --- Aliases ---
+alias g='gitui'
+alias pn='pnpm'
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'

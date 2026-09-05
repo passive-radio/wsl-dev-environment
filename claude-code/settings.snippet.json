@@ -1,0 +1,7 @@
+{
+  "//": "Merge into ~/.claude/settings.json - only the statusLine key matters.",
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$HOME/.claude/statusline.sh\""
+  }
+}

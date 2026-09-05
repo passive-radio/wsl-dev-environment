@@ -1,0 +1,29 @@
+# Custom additions on top of yazi's defaults.
+# `i` is unbound in the file-manager context by default (it's only used inside
+# yazi's own text-input widgets), so this doesn't conflict with anything.
+
+[mgr]
+prepend_keymap = [
+  # Edit the hovered file with $EDITOR (nvim). --block hands the terminal to
+  # nvim until it exits, so `:q` (or any normal quit) drops straight back
+  # into yazi exactly where you left off.
+  { on = "i", run = "shell '$EDITOR %h' --block", desc = "Open hovered file in $EDITOR" },
+
+  # Force-paste, then strip any Windows "Zone.Identifier" sidecar files that
+  # show up when copying across the Windows/WSL boundary (a WSL/NTFS quirk,
+  # not something yazi creates: ext4 can't hold NTFS's alternate-data-stream
+  # tag, so Windows-origin files end up with a literal "name:Zone.Identifier"
+  # or "nameZone.Identifier" file next to them). This covers single and
+  # multi-file pastes the same way, since it just sweeps the destination
+  # directory afterward rather than special-casing the selection.
+  #
+  # `paste` runs as a background task, so a poll loop (not a fixed sleep) is
+  # used to catch the sidecar files whenever they actually land - up to ~20s,
+  # which comfortably covers small-to-medium pastes. A very large/slow
+  # transfer could still leave stragglers past that window; re-press P, or
+  # run the same find/-delete by hand, if that ever happens.
+  { on = "P", run = [
+      "paste --force",
+      "shell 'd=\"$PWD\"; for i in $(seq 1 20); do find \"$d\" -maxdepth 1 \\( -iname \"*:Zone.Identifier\" -o -iname \"*Zone.Identifier\" \\) -delete 2>/dev/null; sleep 1; done'",
+    ], desc = "Paste (force) and strip Zone.Identifier sidecars" },
+]

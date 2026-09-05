@@ -1,0 +1,17 @@
+# Default prompt. Cloud-identity modules (gcloud account/project, AWS region)
+# are hidden here since they show your GCP email / AWS profile on every single
+# prompt line — awkward during screen recordings or captures. Everything else
+# (directory, git, language versions, etc.) still uses starship's normal
+# defaults, since only the modules mentioned below are touched.
+#
+# To see cloud info again for a gcloud/AWS work session, run `cloud-prompt-on`
+# (defined in ~/.config/shell/interactive.sh) - it points STARSHIP_CONFIG at
+# ~/.config/starship-cloud.toml for the current shell only. `cloud-prompt-off`
+# reverts, or just open a new shell. Your gcloud/AWS login itself is never
+# touched either way - this only changes what the prompt displays.
+
+[gcloud]
+disabled = true
+
+[aws]
+disabled = true

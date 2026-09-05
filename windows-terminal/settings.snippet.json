@@ -1,0 +1,13 @@
+{
+  "//": "Not a full settings.json - just the relevant fragment. Merge this",
+  "//1": "into 'profiles.defaults' in your real settings.json, or run",
+  "//2": "apply-default-font.ps1 to patch it automatically (with a backup).",
+
+  "profiles": {
+    "defaults": {
+      "font": {
+        "face": "HackGen Console NF"
+      }
+    }
+  }
+}

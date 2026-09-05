@@ -1,0 +1,9 @@
+# "Cloud dev" prompt variant - same as ~/.config/starship.toml but with the
+# gcloud/AWS identity modules visible. Activated for the current shell only
+# via `cloud-prompt-on`; revert with `cloud-prompt-off` or a new shell.
+
+[gcloud]
+disabled = false
+
+[aws]
+disabled = false

@@ -1,0 +1,24 @@
+# ~/.bash_profile — executed by bash(1) for login shells.
+# Always load the shared environment (PATH/pyenv/nvm-default/etc.) first,
+# since it's needed regardless of which shell we end up in.
+[ -r "$HOME/.config/shell/env.sh" ] && . "$HOME/.config/shell/env.sh"
+
+case $- in
+    *i*)
+        # Real login shell is still /bin/bash (chsh needs an interactive
+        # password prompt, so it can't be done from here) - so every new
+        # WSL/Windows Terminal window starts as bash by default and never
+        # even reaches .zshrc, which is where syntax-highlighting/starship/
+        # atuin/zoxide/sheldon all live. Hand off to zsh immediately instead,
+        # skipping .bashrc's own interactive setup entirely (it would just be
+        # redone by zsh a moment later).
+        #
+        # Escape hatch: `__NO_ZSH_EXEC=1 bash` (or a plain `bash` from inside
+        # an existing shell, which isn't a login shell and never hits this)
+        # gets you a real interactive bash if you ever need one.
+        if [ -z "${__NO_ZSH_EXEC:-}" ] && command -v zsh >/dev/null 2>&1; then
+            exec zsh -li
+        fi
+        [ -r "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+        ;;
+esac
